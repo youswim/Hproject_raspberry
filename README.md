@@ -1,6 +1,11 @@
 # Hproject_raspberry
 한이음(21년도) 라즈베리파이 코드
 
-led_flask.py는 웹으로 제어 가능한 신호등 코드입니다.
+## led_flask.py
+웹서버를 사용해서 신호등의 상태를 변경할 수 있음
 
-led_flask_plus_req는 led_flask.py에서 현재 신호등 상태를 서버에 JSON으로 전송하는 코드입니다
+## led_flask_plus_req
+led_flask.py에 기능을 추가한 코드. 
+현재 신호등 점멸 상태 정보를 메인 서버에 전송(JSON)
+
+
