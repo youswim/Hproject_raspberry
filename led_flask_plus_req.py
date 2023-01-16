@@ -1,3 +1,5 @@
+#-*- coding:utf-8 -*-
+
 from flask import Flask
 import time
 import RPi.GPIO as gpio
@@ -35,7 +37,7 @@ def light1_on():
     for i in range(1,31): #state의 변화가 일어날 경우, 함수 종료
         time.sleep(0.1)#0.3초씩 10번, 즉 3초동안 파란불 켜짐
         if(i%10 == 0):
-            print(i)
+            #print(i)
             current_time = current_time - 1
             print(current_time)
         #print(STATE)
@@ -113,8 +115,11 @@ def led_time():
                 "ledTime":a
             }
             print(data1)
-            
-            res = requests.post(URL, json=data1)
+
+            try:
+                res = requests.post(URL, json=data1)
+            except:
+                print("post 예외 발생")
 
             #print(current_light)
             #print(current_time)
