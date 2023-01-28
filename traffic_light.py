@@ -96,6 +96,8 @@ def light2_to_red():
 
 
 def traffic_light():
+    gpio.output(light1_red, 1)
+    gpio.output(light2_red, 1)
     try:
         while True:
             light1_on()
