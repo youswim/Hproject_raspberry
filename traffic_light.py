@@ -5,11 +5,36 @@ import threading
 global g_state
 global led_pins
 
+global light1_red
+global light1_yello
+global light1_green
+
+global light2_red
+global light2_yello
+global light2_green
+
 def setup():
     global g_state
     global led_pins
+
+    global light1_red
+    global light1_yello
+    global light1_green
+
+    global light2_red
+    global light2_yello
+    global light2_green
+
+    light1_red = 5
+    light1_yello = 6
+    light1_green = 13
+
+    light2_red = 16
+    light2_yello = 20
+    light2_green = 21
+
     g_state=1 #켜져있는 신호등 상태를 저장하는 전역변수
-    led_pins = [5,6,13,16,20,21] # 빨노초 빨노초
+    led_pins = [light1_red,light1_yello,light1_green,light2_red,light2_yello,light2_green] # 빨노초 빨노초
 
     gpio.setmode(gpio.BCM)
     for x in led_pins:
@@ -19,16 +44,19 @@ def setup():
 
 def get_input(): #쓰레드로 만들어서 입력을 받는 함수
     global g_state
-    while True:
-        g_state=int(input())
-        #print("input: ",STATE)
-        #input을 받아서 전역변수에 저장한다
+    try:
+        while True:
+            g_state=int(input())
+            #print("input: ",STATE)
+            #input을 받아서 전역변수에 저장한다
+    except KeyboardInterrupt:
+        gpio.cleanup()
 
 def light1_on():
     global g_state
     global led_pins
-    gpio.output(led_pins[0],0)
-    gpio.output(led_pins[2],1) #1번 신호등의초록불 ON
+    gpio.output(light1_red,0)
+    gpio.output(light1_green,1) #1번 신호등의초록불 ON
     g_state=1 #state를 1로 변환(1번 신호등이 켜지므로)
     print("light1 on")
     for i in range(0,10): #state의 변화가 일어날 경우, 함수 종료
@@ -40,8 +68,8 @@ def light1_on():
 def light2_on():
     global g_state
     global led_pins
-    gpio.output(led_pins[3],0)
-    gpio.output(led_pins[5],1)
+    gpio.output(light2_red,0)
+    gpio.output(light2_green,1)
     g_state=2
     print("light2 on")
     for i in range(0,10):
@@ -52,19 +80,19 @@ def light2_on():
 
 
 def light1_to_red():#1번 신호등의 색을 붉은색으로 변화시키는 과정이다.
-    gpio.output(led_pins[2], 0)
-    gpio.output(led_pins[1], 1)
+    gpio.output(light1_green, 0)
+    gpio.output(light1_yello, 1)
     time.sleep(1)
-    gpio.output(led_pins[1],0)
-    gpio.output(led_pins[0],1)
+    gpio.output(light1_yello,0)
+    gpio.output(light1_red,1)
 
 
 def light2_to_red():
-    gpio.output(led_pins[5], 0)
-    gpio.output(led_pins[4], 1)
+    gpio.output(light2_green, 0)
+    gpio.output(light2_yello, 1)
     time.sleep(1)
-    gpio.output(led_pins[4],0)
-    gpio.output(led_pins[3],1)
+    gpio.output(light2_yello,0)
+    gpio.output(light2_red,1)
 
 
 def traffic_light():
@@ -77,7 +105,7 @@ def traffic_light():
             light2_to_red()
 
     except KeyboardInterrupt:
-        pass
+        gpio.cleanup()
 
 
     #상태 변경을 위한 STATE입력 함수를 쓰레드로 돌린다.
@@ -95,6 +123,5 @@ try:
 
 except KeyboardInterrupt:
     gpio.cleanup()
-    pass
 
 #스레드는 한번만 실행할 수 있다.
