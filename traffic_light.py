@@ -3,10 +3,9 @@ import RPi.GPIO as gpio
 import threading
 import pika
 
-global g_on_light_number
-
 g_host_name = "localhost"
-g_queue_name = "snowdeer_queue"
+g_change_request_queue = "change_request_queue"
+g_light_time_queue = "light_time_queue"
 
 g_light1_red = 5
 g_light1_yello = 6
@@ -15,6 +14,8 @@ g_light1_green = 13
 g_light2_red = 16
 g_light2_yello = 20
 g_light2_green = 21
+
+g_base_time_length = 3
 
 def setup():
     led_pins = [g_light1_red, g_light1_yello, g_light1_green,
@@ -43,14 +44,16 @@ def receive_message_from_mq():
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=g_host_name))
     channel = connection.channel()
 
-    channel.queue_declare(queue=g_queue_name, arguments={'x-message-ttl': int(1000)})
+    channel.queue_declare(queue=g_change_request_queue, arguments={'x-message-ttl': int(1000)})
 
     def callback(ch, method, properties, body):
         global g_on_light_number
         print("Message is Arrived %r" % body)
+        # print("received : {}".format(body))
         g_on_light_number = int(body)
 
-    channel.basic_consume(queue=g_queue_name, on_message_callback=callback, auto_ack=True)
+
+    channel.basic_consume(queue=g_change_request_queue, on_message_callback=callback, auto_ack=True)
 
     try:
         print("Waiting for messages.")
@@ -58,15 +61,35 @@ def receive_message_from_mq():
     except KeyboardInterrupt:
         pass
 
+def send_message(light_number, time):
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=g_host_name))
+    channel = connection.channel()
+
+    channel.queue_declare(queue=g_light_time_queue, arguments={'x-message-ttl' : int(1000)})
+
+    body=str(light_number) + " " + str(time)
+
+    channel.basic_publish(exchange='', routing_key=g_light_time_queue, body=body)
+    connection.close()
+
 def light_on(g_light_red, g_light_green, light_number):
     global g_on_light_number
+    global g_current_light_time
+
     gpio.output(g_light_red, 0)
-    gpio.output(g_light_green, 1)  # 1번 신호등의초록불 ON
-    g_on_light_number = light_number  # state를 1로 변환(1번 신호등이 켜지므로)
+    gpio.output(g_light_green, 1)
+
+    g_on_light_number = light_number
+    g_current_light_time = g_base_time_length
+    send_message(g_on_light_number, g_current_light_time)
+
     print("light{} on".format(light_number))
-    for i in range(0, 10):  # state의 변화가 일어날 경우, 함수 종료
-        time.sleep(0.3)  # 0.3초씩 10번, 즉 3초동안 파란불 켜짐
-        # print(STATE)
+
+    for i in range(0, g_base_time_length):
+        time.sleep(1)
+        g_current_light_time -= 1
+        send_message(g_on_light_number, g_current_light_time)
+
         if(g_on_light_number != light_number):
             break
 
