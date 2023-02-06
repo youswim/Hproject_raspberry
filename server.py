@@ -9,6 +9,8 @@ import pika
 
 global g_on_light_number
 global g_light_time
+global light_status
+light_status = ""
 
 g_host_name = "localhost"
 g_change_request_queue = "change_request_queue"
@@ -37,13 +39,16 @@ def receive_message_from_mq():
     def callback(ch, method, properties, body):
         global g_on_light_number
         global g_light_time
+        global light_status
 
         decoded_body = body.decode('utf-8')
-
-        print("Message is Arrived : {}".format(decoded_body))
-        splitted_body = decoded_body.split(" ")
-        g_on_light_number = int(splitted_body[0])
-        g_light_time = int(splitted_body[1])
+        # print("Message is Arrived : %s"%(decoded_body))
+        if(light_status != decoded_body):
+            light_status = decoded_body
+            print("Now light status : %s"%(light_status))
+            splitted_body = light_status.split(" ")
+            g_on_light_number = int(splitted_body[0])
+            g_light_time = int(splitted_body[1])
     
 
     channel.basic_consume(queue=g_light_time_queue, on_message_callback=callback, auto_ack=True)

@@ -55,7 +55,7 @@ def receive_message_from_mq():
         global g_current_light_time
         global g_light_input_number
         decoded_body = body.decode('utf-8')
-        print("Message is Arrived : {}".format(decoded_body))
+        print("Message is Arrived : %s"%(decoded_body))
 
         g_light_input_number = int(decoded_body)
 
@@ -93,7 +93,7 @@ def light_on(g_light_red, g_light_green, light_number):
     g_light_input_number = light_number
     g_current_light_time = g_base_time_length
 
-    print("light{} on".format(light_number))
+    print("light%s on"%(light_number))
 
     for i in range (0, g_base_time_length*10):
         time.sleep(0.1)
@@ -114,8 +114,7 @@ def light_to_red(light_red_pin, light_yello_pin, light_green_pin):  # 1번 신�
     gpio.output(light_red_pin, 1)
 
 def traffic_light():
-    gpio.output(g_light1_red_pin
-, 1)
+    gpio.output(g_light1_red_pin, 1)
     gpio.output(g_light2_red_pin, 1)
     try:
         while True:
