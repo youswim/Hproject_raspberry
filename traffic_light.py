@@ -7,22 +7,23 @@ g_host_name = "localhost"
 g_change_request_queue = "change_request_queue"
 g_light_time_queue = "light_time_queue"
 
-g_light1_red = 5
-g_light1_yello = 6
-g_light1_green = 13
+g_light1_red_pin = 5
+g_light1_yello_pin = 6
+g_light1_green_pin = 13
 
-g_light2_red = 16
-g_light2_yello = 20
-g_light2_green = 21
+g_light2_red_pin = 16
+g_light2_yello_pin = 20
+g_light2_green_pin = 21
 
 g_base_time_length = 3
 
 g_on_light_number = 1
 g_current_light_time = 3
+g_light_input_number = 1
 
 def setup():
-    led_pins = [g_light1_red, g_light1_yello, g_light1_green,
-                  g_light2_red, g_light2_yello, g_light2_green]  # 빨노초 빨노초
+    led_pins = [g_light1_red_pin, g_light1_yello_pin, g_light1_green_pin,
+                  g_light2_red_pin, g_light2_yello_pin, g_light2_green_pin]  # 빨노초 빨노초
 
     gpio.setmode(gpio.BCM)
     for x in led_pins:
@@ -52,10 +53,11 @@ def receive_message_from_mq():
     def callback(ch, method, properties, body):
         global g_on_light_number
         global g_current_light_time
+        global g_light_input_number
         decoded_body = body.decode('utf-8')
         print("Message is Arrived : {}".format(decoded_body))
 
-        g_on_light_number = int(decoded_body)
+        g_light_input_number = int(decoded_body)
 
     channel.basic_consume(queue=g_change_request_queue, on_message_callback=callback, auto_ack=True)
 
@@ -82,20 +84,21 @@ def send_message():
 def light_on(g_light_red, g_light_green, light_number):
     global g_on_light_number
     global g_current_light_time
+    global g_light_input_number
 
     gpio.output(g_light_red, 0)
     gpio.output(g_light_green, 1)
 
     g_on_light_number = light_number
+    g_light_input_number = light_number
     g_current_light_time = g_base_time_length
 
     print("light{} on".format(light_number))
 
     for i in range (0, g_base_time_length*10):
-        print(i)
         time.sleep(0.1)
-        if(g_on_light_number != light_number):
-            g_current_light_time = 3
+        if(g_light_input_number != light_number):
+            g_current_light_time = 0
             break
         if(i % 10 == 9):
             g_current_light_time -= 1
@@ -103,23 +106,24 @@ def light_on(g_light_red, g_light_green, light_number):
             break
 
 
-def light_to_red(light_red, light_yello, light_green):  # 1번 신호등의 색을 붉은색으로 변화시키는 과정이다.
-    gpio.output(light_green, 0)
-    gpio.output(light_yello, 1)
+def light_to_red(light_red_pin, light_yello_pin, light_green_pin):  # 1번 신호등의 색을 붉은색으로 변화시키는 과정이다.
+    gpio.output(light_green_pin, 0)
+    gpio.output(light_yello_pin, 1)
     time.sleep(1)
-    gpio.output(light_yello, 0)
-    gpio.output(light_red, 1)
+    gpio.output(light_yello_pin, 0)
+    gpio.output(light_red_pin, 1)
 
 def traffic_light():
-    gpio.output(g_light1_red, 1)
-    gpio.output(g_light2_red, 1)
+    gpio.output(g_light1_red_pin
+, 1)
+    gpio.output(g_light2_red_pin, 1)
     try:
         while True:
-            light_on(g_light1_red, g_light1_green, 1)
-            light_to_red(g_light1_red, g_light1_yello, g_light1_green)
+            light_on(g_light1_red_pin, g_light1_green_pin, 1)
+            light_to_red(g_light1_red_pin, g_light1_yello_pin, g_light1_green_pin)
 
-            light_on(g_light2_red, g_light2_green, 2)
-            light_to_red(g_light2_red, g_light2_yello, g_light2_green)
+            light_on(g_light2_red_pin, g_light2_green_pin, 2)
+            light_to_red(g_light2_red_pin, g_light2_yello_pin, g_light2_green_pin)
 
     except KeyboardInterrupt:
         gpio.cleanup()
