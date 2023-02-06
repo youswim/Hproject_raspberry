@@ -50,10 +50,13 @@ def receive_message_from_mq():
         global g_on_light_number
         global g_light_time
 
-        print("Message is Arrived %r" % body)
-        splitted_body = str(body).split(" ")
-        g_on_light_number = splitted_body[0]
-        g_light_time = splitted_body[1]
+        decoded_body = body.decode('utf-8')
+
+        print("Message is Arrived : {}".format(decoded_body))
+        splitted_body = decoded_body.split(" ")
+        g_on_light_number = int(splitted_body[0])
+        g_light_time = int(splitted_body[1])
+    
 
     channel.basic_consume(queue=g_light_time_queue, on_message_callback=callback, auto_ack=True)
 
