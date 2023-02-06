@@ -17,6 +17,9 @@ g_light2_green = 21
 
 g_base_time_length = 3
 
+g_on_light_number = 1
+g_current_light_time = 3
+
 def setup():
     led_pins = [g_light1_red, g_light1_yello, g_light1_green,
                   g_light2_red, g_light2_yello, g_light2_green]  # 빨노초 빨노초
@@ -48,10 +51,11 @@ def receive_message_from_mq():
 
     def callback(ch, method, properties, body):
         global g_on_light_number
-        print("Message is Arrived %r" % body)
-        # print("received : {}".format(body))
-        g_on_light_number = int(body)
+        global g_current_light_time
+        decoded_body = body.decode('utf-8')
+        print("Message is Arrived : {}".format(decoded_body))
 
+        g_on_light_number = int(decoded_body)
 
     channel.basic_consume(queue=g_change_request_queue, on_message_callback=callback, auto_ack=True)
 
@@ -61,15 +65,18 @@ def receive_message_from_mq():
     except KeyboardInterrupt:
         pass
 
-def send_message(light_number, time):
+def send_message():
+    global g_on_light_number
+    global g_current_light_time
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=g_host_name))
     channel = connection.channel()
-
     channel.queue_declare(queue=g_light_time_queue, arguments={'x-message-ttl' : int(1000)})
 
-    body=str(light_number) + " " + str(time)
+    while True:
+        body=str(g_on_light_number) + " " + str(g_current_light_time)
+        channel.basic_publish(exchange='', routing_key=g_light_time_queue, body=body)
+        time.sleep(0.1)
 
-    channel.basic_publish(exchange='', routing_key=g_light_time_queue, body=body)
     connection.close()
 
 def light_on(g_light_red, g_light_green, light_number):
@@ -81,17 +88,20 @@ def light_on(g_light_red, g_light_green, light_number):
 
     g_on_light_number = light_number
     g_current_light_time = g_base_time_length
-    send_message(g_on_light_number, g_current_light_time)
 
     print("light{} on".format(light_number))
 
-    for i in range(0, g_base_time_length):
-        time.sleep(1)
-        g_current_light_time -= 1
-        send_message(g_on_light_number, g_current_light_time)
-
+    for i in range (0, g_base_time_length*10):
+        print(i)
+        time.sleep(0.1)
         if(g_on_light_number != light_number):
+            g_current_light_time = 3
             break
+        if(i % 10 == 9):
+            g_current_light_time -= 1
+        if(g_current_light_time <= 0):
+            break
+
 
 def light_to_red(light_red, light_yello, light_green):  # 1번 신호등의 색을 붉은색으로 변화시키는 과정이다.
     gpio.output(light_green, 0)
@@ -121,14 +131,18 @@ try:
     if __name__ == "__main__":
         setup()
 
-        input_thread = threading.Thread(target=get_input)
-        input_thread.start()
+        # input_thread = threading.Thread(target=get_input)
+        # input_thread.start()
+        # 신호등 변경이 원하는대로 이뤄지는지 확인하기 위해 사용하는 테스트용 함수
+
+        traffic_light_thread = threading.Thread(target=traffic_light)
+        traffic_light_thread.start()
 
         receive_message = threading.Thread(target=receive_message_from_mq)
         receive_message.start()
 
-        traffic_light_thread = threading.Thread(target=traffic_light)
-        traffic_light_thread.start()
+        send_msg = threading.Thread(target=send_message)
+        send_msg.start()
 
 
 except KeyboardInterrupt:
